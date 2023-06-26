@@ -1,0 +1,31 @@
+local weapons = game.ReplicatedStorage:WaitForChild("Weapons")
+
+local re = game.ReplicatedStorage:WaitForChild("EquipWeapon") -- Connects Script to Equip Weapon remote event
+
+
+re.OnServerEvent:Connect(function(plr, gun)
+
+	if gun and gun.Parent.Parent == weapons then
+
+		local gunType = gun.Parent -- Gets the type of weapon which lets us tell if it's Primary or Secondary
+
+
+		for i, child in pairs(plr.Backpack:GetChildren()) do -- Loops for all items in player Backpack not currently equipped
+
+			if gunType:FindFirstChild(child.Name) then -- If Child is the same as backpack guntype it will delete the item from the packpack 
+				child:Destroy()
+			end
+		end
+
+		for i, child in pairs(plr.Character:GetChildren()) do -- Loops for the items the player has equipped
+
+			if gunType:FindFirstChild(child.Name) then -- If Child is the same as the equipped guntype
+				child:Destroy()
+			end
+		end
+
+
+		local gunClone = gun:Clone() -- Creates a copy of the desired weapon
+		gunClone.Parent = plr.Backpack -- Puts Tool in user's backpack
+	end
+end)

@@ -1,0 +1,10 @@
+local uis = game:GetService("UserInputService")
+local button = script.Parent
+
+uis.InputBegan:Connect(function(input, gameprocessed) -- Enables Modal button to allow cursor moving
+	if input.UserInputType == Enum.UserInputType.Keyboard then
+		if input.KeyCode == Enum.KeyCode.F then
+			button.Visible = not button.Visible
+		end
+	end	
+end)

@@ -1,0 +1,47 @@
+pnts = script.Pants
+redshirt = script.RedShirt
+blueshirt = script.BlueShirt
+
+function GiveRedClothes(character)
+	if not character:findFirstChild("Shirt") then 
+		redshirt:Clone().Parent = character
+	else character:findFirstChild("Shirt"):Destroy()
+		redshirt:Clone().Parent = character
+	end
+
+	if not character:findFirstChild("Pants") then 
+		pnts:Clone().Parent = character
+	else character:findFirstChild("Pants"):Destroy()
+		pnts:Clone().Parent = character
+	end
+end
+
+function GiveBlueClothes(character)
+	if not character:findFirstChild("Shirt") then 
+		blueshirt:Clone().Parent = character
+	else character:findFirstChild("Shirt"):Destroy()
+		blueshirt:Clone().Parent = character
+	end
+
+	if not character:findFirstChild("Pants") then 
+		pnts:Clone().Parent = character
+	else character:findFirstChild("Pants"):Destroy()
+		pnts:Clone().Parent = character
+	end
+end
+
+game.Players.PlayerAdded:connect(function(p) -- When player joins
+	p.CharacterAdded:connect(function(char) -- When player character spawns
+		
+		wait(1.12)
+		local plr = game.Players:findFirstChild(char.Name)
+		--print(plr.TeamColor)
+		if plr.TeamColor == BrickColor.new("Dark blue") then -- If on blue team, gives player Blue Shirt and Pants
+			--print("TestOne")
+			GiveBlueClothes(char)
+		elseif plr.TeamColor == BrickColor.new("Crimson") then -- If on red team, gives player Red Shirt and Pants
+			--print("TestOne")
+			GiveRedClothes(char)
+		end
+	end)
+end)

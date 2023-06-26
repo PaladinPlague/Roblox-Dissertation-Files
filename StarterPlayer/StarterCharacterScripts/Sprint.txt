@@ -1,0 +1,39 @@
+local userInput = game:GetService('UserInputService') -- Gets Data from UserInputService
+local players = game:GetService('Players') -- Gets Data from Player list
+local camera = workspace.CurrentCamera
+
+local sprintSpeed = 30
+local walkSpeed = 16
+local globalSprint = game.ReplicatedStorage.globalsprinting
+
+local player = players.LocalPlayer -- Identifies the Player on this side
+
+local function beginSprint(input, gameProcessed)
+	if not gameProcessed then
+		if input.UserInputType == Enum.UserInputType.Keyboard then -- checks if input was from the keyboard
+			local keycode = input.KeyCode -- KeyCode is used to convert the keyboards input into a value up to 249
+			if keycode == Enum.KeyCode.LeftShift then -- Converts Left Shift to Keycode with Enum to check it matches the user's keycode
+				player.Character.Humanoid.WalkSpeed = sprintSpeed
+				camera.FieldOfView = 100
+				globalSprint.Value = true
+			end
+		end
+	end
+end
+
+local function endSprint(input, gameProcessed)
+	if not gameProcessed then
+		if input.UserInputType == Enum.UserInputType.Keyboard then -- checks if input was from the keyboard
+			local keycode = input.KeyCode -- KeyCode is used to convert the keyboards input into a value up to 249
+			if keycode == Enum.KeyCode.LeftShift then -- Converts Left Shift to Keycode with Enum to check it matches the user's keycode
+				player.Character.Humanoid.WalkSpeed = walkSpeed
+				camera.FieldOfView = 90
+				globalSprint.Value = false
+			end
+		end
+	end
+end
+
+-- The Below needs to be after since you can't call a function before its created
+userInput.InputBegan:Connect(beginSprint) -- Runs beginSprint when input pressed and checks if the User input is Left Shift, setting its walk speed to sprintspeed
+userInput.InputEnded:Connect(endSprint) -- Runs beginSprint when input is let go of and checks if the User let go of Left Shift, setting its walk speed to the walk speed

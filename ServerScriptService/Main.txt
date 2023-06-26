@@ -1,0 +1,142 @@
+local Time = game.ReplicatedStorage.Time
+local BlueKill = game.ReplicatedStorage.BlueKill
+local RedKill = game.ReplicatedStorage.RedKill
+local Status = game.ReplicatedStorage.Status
+local Players = game:GetService("Players")
+local Teams = game:GetService("Teams")
+local storage = game:GetService("ReplicatedStorage")
+local BlueTeam = 0
+local RedTeam = 0
+
+function TimeWait(TimeToWait)
+	Time.Value = TimeToWait
+	
+	repeat
+		wait(1)
+		Time.Value -= 1
+	until Time.Value < 1
+end
+
+game.Players.PlayerAdded:Connect(function(player) -- When a player joins
+	if Status.Value == "Round in progress" then -- If the round is in progress
+		if BlueTeam < RedTeam then -- Add player to Blue Team
+			BlueTeam += 1
+			player.Team = Teams.Blue
+			player.TeamColor = Teams.Blue.TeamColor
+		elseif RedTeam < BlueTeam then -- Add player to red team
+			RedTeam += 1
+			player.Team = Teams.Red
+			player.TeamColor = Teams.Red.TeamColor
+		elseif RedTeam == BlueTeam then -- Randomize team assignment if teams are equal
+			local coinFlip = math.random(0,1)
+			if coinFlip == 1 then
+				BlueTeam += 1
+				player.Team = Teams.Blue
+				player.TeamColor = Teams.Blue.TeamColor
+			else
+				RedTeam += 1
+				player.Team = Teams.Red
+				player.TeamColor = Teams.Red.TeamColor
+			end
+		
+		end
+		
+		wait(1)
+		player:LoadCharacter() -- Respawns character
+	end
+	
+	player.CharacterAdded:Connect(function(character) -- When character loads in
+		character.Humanoid.Died:Connect(function() -- When character dies
+			if character.Humanoid:FindFirstChild("creator") then -- Checks for if player has a creator tag on them to prevent point giving on reset
+				local killer = character.Humanoid:FindFirstChild("creator").Value -- Sets killer to name of player assigned to tag
+				
+				if killer.TeamColor == Teams.Blue.TeamColor then -- Gets Killer's team color and checks if it's red or Blue
+					if player.Team.TeamColor == Teams.Blue.TeamColor then -- Checks if Killer and player are same
+						BlueKill.Value -= 1
+					elseif player.Team.TeamColor == Teams.Red.TeamColor then
+						BlueKill.Value += 1
+					end
+				elseif killer.TeamColor == Teams.Red.TeamColor then
+					if player.Team.TeamColor == Teams.Blue.TeamColor then
+						RedKill.Value += 1
+					elseif player.Team.TeamColor == Teams.Red.TeamColor then -- Checks if Killer and player are same
+						RedKill.Value -= 1
+					end
+				end
+			end
+		end)
+	end)
+end)
+
+while true do -- Loops for every round
+	BlueTeam = 0
+	RedTeam = 0
+	RedKill.Value = 0
+	BlueKill.Value = 0
+	
+	for _,v in pairs(game.Players:GetChildren()) do -- Assigns all players to team Unassigned
+		v.Team = Teams.Unassigned
+		v.TeamColor = Teams.Unassigned.TeamColor
+	end
+	
+	wait(1)
+	
+	for _,v in pairs(game.Players:GetChildren()) do -- Reloads all players
+		v:LoadCharacter()
+	end
+	
+	Status.Value = "Intermission"
+	TimeWait(20)
+	
+	if #game.Players:GetChildren() < 2 then -- If there is only one player then restart
+		Status.Value = "Need More Players" 
+		TimeWait(5)
+	else
+		Status.Value = "Round in progress"
+
+		for _,v in pairs(game.Players:GetChildren()) do -- Assign players to teams on round start
+			if BlueTeam <= RedTeam then
+				BlueTeam += 1
+				v.Team = Teams.Blue
+				v.TeamColor = Teams.Blue.TeamColor
+
+			elseif RedTeam < BlueTeam then
+				RedTeam += 1
+				v.Team = Teams.Red
+				v.TeamColor = Teams.Red.TeamColor
+
+			end
+		end
+		
+		wait(1)
+		
+		for _,v in pairs(game.Players:GetChildren()) do -- Reload all players
+			v:LoadCharacter()
+		end
+		
+		TimeWait(240)
+
+		for _,v in pairs(game.Players:GetChildren()) do -- Once round ends set all players to unassigned team
+			v.Team = Teams.Unassigned
+			v.TeamColor = Teams.Unassigned.TeamColor
+		end
+		
+		wait(1)
+		
+		for _,v in pairs(game.Players:GetChildren()) do
+			v:LoadCharacter()
+		end
+
+		if BlueKill.Value > RedKill.Value then -- Decide winning team
+			Status.Value = "Blue Win!"
+
+		elseif RedKill.Value > BlueKill.Value then
+			Status.Value = "Red Win!"
+
+		else
+			Status.Value = "Tie!"
+		end
+
+		TimeWait(20)
+	end
+end

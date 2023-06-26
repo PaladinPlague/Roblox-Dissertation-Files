@@ -1,0 +1,6 @@
+local camera = workspace.CurrentCamera
+local uis = game:GetService("UserInputService")
+local editting = game.ReplicatedStorage.edittingLoadout
+editting.Value = false -- Prevents user from not being able to shoot on respawn 
+camera.FieldOfView = 90 -- Defaults the users FOV on respawn
+uis.MouseDeltaSensitivity = 1 -- Fixes slowed down sensitivity when using snipers

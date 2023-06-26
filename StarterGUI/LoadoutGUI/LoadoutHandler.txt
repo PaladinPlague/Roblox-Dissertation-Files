@@ -1,0 +1,77 @@
+local weaponsFolder = game.ReplicatedStorage:WaitForChild("Weapons")
+local weaponTypes = {weaponsFolder.Primary, weaponsFolder.Secondary} -- Creates categories for ewapon types
+local ss = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local button = script.Parent:WaitForChild("ToggleLoadoutGui")
+local loadout = script.Parent:WaitForChild("Loadout")
+local edittor = ss.edittingLoadout
+local primary = nil
+local secondary = nil
+
+button.Visible = true
+loadout.Visible = false
+
+
+local function updateLoadout() -- When a button is pressed this is called
+
+	if primary then
+		game.ReplicatedStorage.EquipWeapon:FireServer(primary) -- If Primary is chosen then fire to WeaponEquipper script
+	end
+	
+	if secondary then
+		game.ReplicatedStorage.EquipWeapon:FireServer(secondary) -- If Secondary is chosen then fire to WeaponEquipper script
+	end
+
+end
+
+
+for i, weaponType in pairs(weaponTypes) do -- Loops for every folder in Weapons class folder (Primary and Secondary)
+
+	local newButton = script.WeaponTypeButton:Clone() -- Creates a duplicate of the button template and changes its name to the type
+	newButton.Text = weaponType.Name
+
+	newButton.Parent = loadout.WeaponTypes -- Assigns button to weapontype frame
+
+
+	newButton.MouseButton1Click:Connect(function() -- Grants functionality to the button
+
+		for i, child in pairs(loadout.WeaponsList:GetChildren()) do 
+
+			if child:IsA("TextButton") then child:Destroy() end -- Deletes all children when a category is pressed if there is any
+		end
+
+
+		for i, weaponChild in pairs(weaponType:GetChildren()) do -- Loop through the children of the weapon type
+
+			local newWeaponButton = script.WeaponButton:Clone() -- Create a new button for each child
+			newWeaponButton.Text = weaponChild.Name
+
+			newWeaponButton.Parent = loadout.WeaponsList -- Assigns button to weaponlist frame
+
+
+			newWeaponButton.MouseButton1Click:Connect(function() -- Grants button function
+
+				if weaponType.Name == "Primary" then -- If weapon type is a primary set priamry variable
+					primary = weaponChild
+
+				elseif weaponType.Name == "Secondary" then -- If weapon type is a secondary set secondary variable
+					secondary = weaponChild 
+				end
+
+				updateLoadout() -- When weapon child button is pressed, run updateLoadout()
+			end)
+		end
+	end)
+end
+
+
+
+
+
+
+script.Parent:WaitForChild("ToggleLoadoutGui").MouseButton1Click:Connect(function() -- When Loadout button is pressed
+
+	loadout.Visible = not loadout.Visible -- Displays and Hides loadout feature
+	edittor.Value = not edittor.Value -- Sets edittor to not edittor 
+	
+end)

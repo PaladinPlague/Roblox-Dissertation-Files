@@ -1,0 +1,35 @@
+local re = script.Parent:WaitForChild("RemoteEvent")
+local bang = script.Parent.Handle.Gunshot
+local debris = game:GetService("Debris")
+local damage = 15 -- Value to be taken off target
+
+local function tag(hum,player) -- Tags target to get kill credit/points
+	local tagged = Instance.new("ObjectValue", hum)
+	tagged.Name = "creator"
+	tagged.Value = player
+	debris:AddItem(tagged, 2) -- Removes after 2 seconds in case player resets character
+end
+
+local function untagHum(hum) -- Removes creator tags of other players when hitting target
+	for i, v in pairs(hum:GetChildren()) do
+		if v:IsA("ObjectValue") and v.Name == "creator" then
+			v:Destroy()
+		end
+	end
+end
+
+
+
+local function onShoot(player, target)
+	bang:Play()
+	if target and target.Parent then
+		local hum =  target.Parent:FindFirstChild("Humanoid")
+		if hum then -- If target has a Humanoid Attribute then
+			untagHum(hum)
+			hum:TakeDamage(damage)
+			tag(hum, player)
+		end
+	end
+end
+
+re.OnServerEvent:Connect(onShoot) -- When Remote event is run

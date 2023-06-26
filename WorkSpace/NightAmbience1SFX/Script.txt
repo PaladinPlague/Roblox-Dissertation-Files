@@ -1,0 +1,3 @@
+local music = script.Parent
+
+music:Play()

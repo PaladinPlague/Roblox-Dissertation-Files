@@ -1,0 +1,43 @@
+local UIS = game:GetService("UserInputService")
+local char = script.Parent
+local slideAnim = Instance.new("Animation")
+local keybind = Enum.KeyCode.LeftControl
+local keysprint = Enum.KeyCode.LeftShift
+local canslide = true
+local Player = game.Players.LocalPlayer --local player
+repeat wait(1) until Player.Character --repeats wait(1) until the character has loaded
+local Character = Player.Character --character
+local Humanoid = Character:FindFirstChild("Humanoid") --finds the humanoid from the players character
+local players = game:GetService('Players')
+local player = players.LocalPlayer
+
+
+slideAnim.AnimationId = "rbxassetid://12072703244"
+
+UIS.InputBegan:Connect(function(input, gameprocessed)
+	if gameprocessed then return end
+	if not canslide then return end
+	
+	
+	if input.KeyCode == keybind and player.Character.Humanoid.WalkSpeed > 17 then
+		canslide = false
+	
+		local playAnim = char.Humanoid:LoadAnimation(slideAnim)
+		playAnim:Play()
+
+		local slide = Instance.new("BodyVelocity")
+		slide.MaxForce = Vector3.new(1, 0, 1) * 15000
+		slide.Velocity = char.HumanoidRootPart.CFrame.lookVector * 100
+		slide.Parent = char.HumanoidRootPart
+		Humanoid.CameraOffset = Humanoid.CameraOffset * 100
+		for count = 1, 11 do
+			wait(0.07)
+			slide.Velocity *= .85
+		end
+		-- Humanoid.CameraOffset = Humanoid.CameraOffset * 100 This was meant to set the users camera lower but it never worked
+		playAnim:Stop()
+		slide:Destroy()
+		wait(3.07)
+		canslide = true
+	end
+end)

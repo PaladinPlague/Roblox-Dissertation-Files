@@ -1,0 +1,151 @@
+-- Service and Script Variables
+local gun =  script.Parent
+local re = script.Parent:WaitForChild("RemoteEvent")
+local uis = game:GetService("UserInputService")
+local Debris = game:GetService("Debris")
+local texture = Instance.new("Texture")
+local runService = game:GetService("RunService")
+
+-- Nil Values
+local player = nil
+local mouse =  nil
+local gunScreenGui = nil
+local ammolabel = nil
+
+-- Editable Values
+local ammo = 10 -- Current ammo in magazine
+local ammomax = 10 -- Same as Ammomax
+local recoil = 3 -- affects how much the player is force to look up each shot
+local rpm = 0.75 -- Value to be editted to allow for how fast weapon 
+local reloadtime = 3.5 -- Time taken to reload
+local slowed = 25 -- How slow the mouse is reduced when aiming
+local zoom = 18 -- Field of View set
+
+-- Check Variables
+local beingHeld = false
+local shot = false 
+local equipped = false
+local scoped = false
+local reloading = false
+
+--Visual elements
+local flash = script.Parent.Flash.ParticleEmitter
+local gunScreenGuiTemplate = script.Parent:WaitForChild('ammoGUI')
+local globalsprinting = game.ReplicatedStorage.globalsprinting -- Used to prevent user from shooting while sprinting
+local editting = game.ReplicatedStorage.edittingLoadout -- Used to prevent user from shooting while editting loadout
+local camera = workspace.CurrentCamera
+
+local reload = script.Parent.Handle.Reload -- sound effect should be "Reload"
+
+function TimeWait(TimeToWait)
+	shot = true
+	local waiting = 0
+	repeat
+		waiting += 0.03
+		wait(0.03)
+	until waiting > TimeToWait
+	shot = false
+end
+
+local function displayGUI()
+	local playerGUI = game:GetService('Players').LocalPlayer:WaitForChild('PlayerGui')
+	gunScreenGui = playerGUI:FindFirstChild('GUI')
+	if not gunScreenGui then -- If AmmoGUI for this weapon isn't made yet, clone ammoGUI
+		gunScreenGui = gunScreenGuiTemplate:Clone()
+		gunScreenGui.Parent = playerGUI
+	end
+	gunScreenGui.Enabled = true
+	ammolabel = gunScreenGui:FindFirstChild('AmmoLabel')
+	ammolabel.Text = "Ammo: " .. ammo .. "/" .. ammomax
+end
+
+local function onInputBegan(input, _gameProcessed)
+
+	if equipped then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 and ammo > 0 -- Each time Mouse 1 is pressed
+			and globalsprinting.Value ~= true and shot ~= true and editting.Value ~= true then
+
+			re:FireServer(mouse.Target) -- Sends Mouse.Target to server
+			flash:Emit(1)
+
+			if mouse.Target then -- If mouse.target hits something like the skybox, this prevents bullethole being made
+				if(mouse.target.Parent:FindFirstChild("BulletPart")) then -- If bullet hole is target it doesn't create a new one to avoid overlap
+					-- Just a holder
+				elseif(mouse.target.Parent:FindFirstChild("Humanoid")) then -- if bullet hole is on target
+					local part = Instance.new("Part")
+					part.Anchored = true
+					part.Name = "BulletPart"
+					part.Shape = Enum.PartType.Block
+					part.Size = Vector3.new(0.05,0.05,0.05)
+					-- Temp for determining position part.Size = Vector3.new(1,1,1)
+					part.Color = Color3.new(0.0862745, 0.0862745, 0.0862745)
+					part.Parent = workspace
+					part.Position = mouse.Hit.Position
+					Debris:AddItem(part, rpm-0.0001) -- Deletes the bullet hole before the next shot
+				else
+
+					local part = Instance.new("Part")
+					part.Anchored = true
+					part.Name = "BulletPart"
+					part.Shape = Enum.PartType.Block
+					part.Size = Vector3.new(0.05,0.05,0.05)
+					-- Temp for determining position part.Size = Vector3.new(1,1,1)
+					part.Color = Color3.new(0.0862745, 0.0862745, 0.0862745)
+					part.Parent = workspace
+					part.Position = mouse.Hit.Position
+					Debris:AddItem(part, 10)
+				end
+
+			end
+			camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(recoil),0,0) -- Forces player to look up when shooting to simulate recoil
+			
+			ammo -= 1
+			ammolabel.Text = "Ammo: " .. ammo .. "/" .. ammomax
+			TimeWait(rpm)  -- Sets shot to true to add cooldown to shooting
+			
+		elseif input.UserInputType == Enum.UserInputType.Keyboard and ammo < ammomax -- When keyboard input begins
+			and reloading == false and equipped == true then
+			if input.KeyCode == Enum.KeyCode.R and not reloading then -- Check if keyboard input is R
+				reloading = true
+				ammo = 0
+				reload:Play()
+				ammolabel.Text = "Reloading"
+				wait(reloadtime)
+				ammo = ammomax
+				ammolabel.Text = "Ammo: " .. ammo .. "/" .. ammomax
+				reloading = false	
+			end
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then -- When mouse input is mouse button 2
+			if scoped == false then
+				camera.FieldOfView = zoom -- How much the camera zooms in 
+				scoped = true			
+				uis.MouseDeltaSensitivity = uis.MouseDeltaSensitivity / slowed -- Slows sensitivty to make it easier to aim
+			else
+				camera.FieldOfView = 90
+				scoped = false
+				uis.MouseDeltaSensitivity = uis.MouseDeltaSensitivity * slowed -- Speeds sensitivty up after zooming out
+			end
+
+		end
+	end
+end
+
+
+
+local function onEquipped()
+	displayGUI()
+	equipped = true
+	player = game.Players.LocalPlayer
+	mouse = player:GetMouse()
+end
+
+local function onUnequipped()
+	equipped = false
+	player = nil
+	mouse = nil
+	gunScreenGui.Enabled = false
+end
+
+gun.Equipped:Connect(onEquipped)
+gun.Unequipped:Connect(onUnequipped)
+uis.InputBegan:Connect(onInputBegan)

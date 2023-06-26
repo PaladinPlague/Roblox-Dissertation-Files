@@ -1,0 +1,6 @@
+while wait() do -- Updates Text as game progresses
+	script.Parent.BlueFrame.Kill.Text = game.ReplicatedStorage.BlueKill.Value
+	script.Parent.RedFrame.Kill.Text = game.ReplicatedStorage.RedKill.Value
+	script.Parent.Status.Text = game.ReplicatedStorage.Status.Value
+	script.Parent.Time.Text = game.ReplicatedStorage.Time.Value
+end

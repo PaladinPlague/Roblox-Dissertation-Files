@@ -1,0 +1,164 @@
+-- Service and Script Variables
+local gun =  script.Parent
+local re = script.Parent:WaitForChild("RemoteEvent")
+local uis = game:GetService("UserInputService")
+local Debris = game:GetService("Debris")
+local texture = Instance.new("Texture")
+local runService = game:GetService("RunService")
+
+-- Nil Values
+local player = nil
+local mouse =  nil
+local gunScreenGui = nil
+local ammolabel = nil
+
+-- Editable Values
+local ammo = 30 -- Current ammo in magazine
+local ammomax = 30 -- Same as Ammomax
+local recoil = 2 -- affects how much the player is force to look up each shot
+local rateperminute = 857 -- Value to be editted to allow for how fast weapon should fire | Higher value = Faster fire rate
+local ratepersecond = rateperminute / 60 -- Converts Rate per minute to rate per second
+local rpm = 1/ratepersecond -- Converts Rate per second to number of times weapon shoots per second
+local reloadtime = 1.5 -- Time taken to reload
+
+-- Check Variables
+local beingHeld = false
+local shot = false 
+local equipped = false
+local reloading = false
+
+--Visual elements
+local flash = script.Parent.Flash.ParticleEmitter
+local gunScreenGuiTemplate = script.Parent:WaitForChild('ammoGUI')
+local gunScreenGui = nil
+local globalsprinting = game.ReplicatedStorage.globalsprinting -- Used to prevent user from shooting while sprinting
+local editting = game.ReplicatedStorage.edittingLoadout -- Used to prevent user from shooting while editting loadout
+local camera = workspace.CurrentCamera
+
+local reload = script.Parent.Handle.Reload -- sound effect should be "Reload"
+
+
+function TimeWait(TimeToWait)
+	shot = true
+	local waiting = 0
+	repeat
+		waiting += 0.03
+		wait(0.03)
+	until waiting > TimeToWait
+	shot = false
+end
+
+local function displayGUI()
+	local playerGUI = game:GetService('Players').LocalPlayer:WaitForChild('PlayerGui')
+	gunScreenGui = playerGUI:FindFirstChild('GUI')
+	if not gunScreenGui then -- If AmmoGUI for this weapon isn't made yet, clone ammoGUI
+		gunScreenGui = gunScreenGuiTemplate:Clone()
+		gunScreenGui.Parent = playerGUI
+	end
+	gunScreenGui.Enabled = true
+	ammolabel = gunScreenGui:FindFirstChild('AmmoLabel')
+	ammolabel.Text = "Ammo: " .. ammo .. "/" .. ammomax
+end
+
+local function onEquipped()
+	equipped = true
+	
+	if equipped then
+		
+		displayGUI()
+		player = game.Players.LocalPlayer
+		mouse = player:GetMouse()
+		
+		mouse.Button1Down:Connect(function() -- While holding mouse button 1
+			if beingHeld == false then
+				beingHeld = true
+				
+				while beingHeld and ammo > 0 and shot ~= true and globalsprinting.Value ~= true and 
+					editting.Value ~= true and equipped == true do
+					
+					re:FireServer(mouse.Target) -- Sends Mouse.Target to server
+					flash:Emit(1)
+					print(camera.CFrame.XVector)
+					print(camera.CFrame.YVector)
+					print(camera.CFrame.ZVector)
+					camera.CFrame = camera.CFrame * CFrame.Angles(math.rad(recoil),0,0) -- Forces player to look up when shooting to simulate recoil
+					
+					if mouse.Target then -- If mouse.target hits something like the skybox, this prevents bullethole being made
+						if(mouse.Target.Parent:FindFirstChild("BulletPart")) then -- If bullet hole is target it doesn't create a new one to avoid overlap
+							-- Just a temp holder
+							
+						elseif(mouse.Target.Parent:FindFirstChild("Humanoid")) then -- if bullet hole is on target
+							local part = Instance.new("Part")
+							part.Anchored = true
+							part.Name = "BulletPart"
+							part.Shape = Enum.PartType.Block
+							part.Size = Vector3.new(0.05,0.05,0.05)
+							part.Color = Color3.new(0.0862745, 0.0862745, 0.0862745)
+							part.Parent = workspace
+							part.CanCollide = false
+							part.Position = mouse.Hit.Position
+							Debris:AddItem(part, rpm-0.001) -- Deletes the bullet hole before the next shot
+
+						else
+
+							local part = Instance.new("Part")
+							part.Anchored = true
+							part.Name = "BulletPart"
+							part.Shape = Enum.PartType.Block
+							part.Size = Vector3.new(0.05,0.05,0.05)
+							-- Temp for determining position part.Size = Vector3.new(1,1,1)
+							part.Color = Color3.new(0.0862745, 0.0862745, 0.0862745)
+							part.Parent = workspace
+							part.CanCollide = false
+							part.Position = mouse.Hit.Position
+							Debris:AddItem(part, 10)
+
+						end
+					end
+					ammo -= 1
+					ammolabel.Text = "Ammo: " .. ammo .. "/" .. ammomax
+					TimeWait(rpm) -- Sets shot to true to add cooldown to shooting
+
+				end
+			end
+		end)
+		
+		mouse.Button1Up:Connect(function() -- Ends shooting when mouse button 1 is released
+			flash:Clear() -- Stops flash emitter from emitting any further
+			beingHeld = false
+		end)
+		
+		
+		uis.InputBegan:Connect(function(input, _gameprocessed) -- When Input began
+			if input.UserInputType == Enum.UserInputType.Keyboard and ammo < ammomax and equipped == true 
+				and editting.Value ~= true and globalsprinting ~= true and reloading ~= true then
+				if input.KeyCode == Enum.KeyCode.R then -- If input is R
+					ammo = 0
+					reloading = true
+					reload:Play()
+					ammolabel.Text = "Reloading"
+					wait(reloadtime)
+					reloading = false
+					ammo = ammomax
+					ammolabel.Text = "Ammo: " .. ammo .. "/" .. ammomax
+				end
+			end
+		end)
+	end
+	
+end
+
+
+uis.WindowFocusReleased:Connect(function() -- Stops the weapon from shooting when the user tabs out
+	beingHeld = false
+end)
+
+local function onUnequipped() -- When equipped disable values to prevent script running when unequipped
+	player = nil
+	mouse = nil
+	equipped = false
+	gunScreenGui.Enabled = false
+end
+
+gun.Equipped:Connect(onEquipped) -- Runs when item equipped
+gun.Unequipped:Connect(onUnequipped) -- Runs when item unequipped

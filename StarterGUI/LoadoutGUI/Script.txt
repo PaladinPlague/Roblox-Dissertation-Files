@@ -1,0 +1,8 @@
+local player = game.Players.LocalPlayer
+local sp = script.Parent:WaitForChild("StopPlayer")
+
+local function respawnPlayer(you)
+	you:LoadCharacter()
+end
+
+sp.OnServerEvent:Connect(respawnPlayer)
